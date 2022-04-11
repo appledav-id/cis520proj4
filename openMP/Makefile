@@ -2,7 +2,7 @@ CC=gcc
 CFLAGS=-Wall -Werror
 
 mp: 
-	${CC} -fopenmp mp.c mp.h -o mp.o ${CFLAGS}
+	${CC} -fopenmp mp.c mp.h -o mp ${CFLAGS}
 
 clean: 
-	rm -f *.o
+	rm -f mp 
