@@ -3,12 +3,15 @@
 
 int anotherFunc()
 {
-    printf("Hello World\n");
-    return 0;
+    int i = 0;
+    return i;
 }
 
 int main()
 {
-    anotherFunc();
+    #pragma omp parallel
+    {
+        printf("Hello World!\n");
+    }
     return 0;
 }
