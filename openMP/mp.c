@@ -5,10 +5,13 @@
 #include <ctype.h>
 #include <omp.h>
 
+#include "mp.h"
+
 #define MAX_LINES 5000
 
 
 
+/* comparison function to use to find the lowest character in each row */
 char findMinChars(char* line)
 {
     char compChar;
@@ -30,18 +33,6 @@ char findMinChars(char* line)
             }
         }
     }
-#if 0
-    /* at this point, we have found the minimum char */
-    data.val = compChar;
-    data.count = 0;
-    
-    for(int i = 0; i < strlen(line); i++)
-    {
-        if(line[i] == compChar)
-            data.count++;
-    }
-    return data;
-#endif 
     return compChar;
 }
 
@@ -66,7 +57,7 @@ int main()
         
         //if (fscanf(fp, "%[^\n]\n", line) == EOF)
         //    break;
-        printf("%d: min char: %c\n", lineNum, findMinChars(line));
+        printf("Line %d: min char: %c\n", lineNum, findMinChars(line));
         lineNum++;
     }
 
