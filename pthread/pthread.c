@@ -7,26 +7,18 @@
 
 #include "pthread.h"
 
-#define MAX_LINES 5000
+#define MAX_LINES 50000000000
 
 char findMinChars(char* line);
   
 /* comparison function to use to find the lowest character in each row */
 char findMinChars(char* line)
 {
-    char compChar;
-
-    if(isalpha(line[0]) == 0)
-        compChar = 'z';
-    else
-        compChar = line[0];
-
-    //printf("compChar: %c\n", compChar);
+    char compChar = '~';
     for(int i = 0; i < strlen(line); i++)
     {
-        if(isalpha(line[i]) != 0)
+        if((line[i] > 32) && (line[i] < 127)) //
         {
-            //printf("line[i]: %c | compChar: %c\n", line[i], compChar);
             if(line[i] < compChar)
             {
                 compChar = line[i];
@@ -39,7 +31,6 @@ char findMinChars(char* line)
 int main()
 {
     size_t lineLen = 2500;
-    /* don't allow more than 2500 chars in one string */
     char* line = malloc(sizeof(char) *lineLen);
     int lineNum = 0;
 
@@ -50,16 +41,13 @@ int main()
     
     for(int i = 0; i <= MAX_LINES; i++)
     {
-        /* change this to getline() */
         if(getline(&line, &lineLen, fp) == -1)
             break;
-        
-        //if (fscanf(fp, "%[^\n]\n", line) == EOF)
-        //    break;
-        printf("Line %d: min char: %c\n", lineNum, findMinChars(line));
+
+        char c = findMinChars(line);
+        printf("Line %d: min char: %c \tcharNum: %d\n", lineNum, c, c);
         lineNum++;
     }
-
 
     return 0;
 }
