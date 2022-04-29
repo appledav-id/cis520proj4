@@ -1,8 +1,9 @@
-CC=gcc 
-CFLAGS=-Wall -Werror -std=c99
+CC=mpicc 
+CFLAGS=-Wall -Werror -std=c99 
 
-mpi: 
-	${CC} -fmpi mpi.c mpi.h -o mpi ${CFLAGS}
+mpi.o: mpi.c 
+	${CC} -c mpi.c -o mpi.o  ${CFLAGS}
 
 clean: 
 	rm -f mpi 
+	rm -f *.o
