@@ -2,6 +2,7 @@ openMP/mp
 pthread/pthread
 
 *.bin
+*.txt
 
 ###C###
 

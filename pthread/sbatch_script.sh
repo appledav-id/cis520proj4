@@ -9,11 +9,11 @@
 ## be #!/bin/bash (or another valid shell).
 
 ## Specify the amount of RAM needed _per_core_. Default is 1G
-#SBATCH --mem-per-cpu=768M
+#SBATCH --mem-per-cpu=1G
 
 ## Specify the maximum runtime. Default is 1 hour (1:00:00)
 #SBATCH --time=0:10:00   # Use the form DD-HH:MM:SS
-#SBATCH --partition=killable.q   # Job may run as killable on owned nodes
+##SBATCH --partition=killable.q   # Job may run as killable on owned nodes
 
 ## Tell slurm how many cores to use, and how many nodes to use
 ## Jobs requesting 16 or fewer cores tend to get scheduled
@@ -21,7 +21,7 @@
 ## benefit from emailing us at beocat@cis.ksu.edu to see how we can assist in
 ## getting your job scheduled in a reasonable amount of time.
 #SBATCH --nodes=1
-#SBATCH --ntasks-per-node=1
+#SBATCH --ntasks-per-node=20
 
 ## Name my job, to make it easier to find in the queue
 #SBATCH --job-name=mls_pthread
