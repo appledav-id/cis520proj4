@@ -1,66 +1,114 @@
 #define _GNU_SOURCE
 #include <stdio.h>
+#include <stdbool.h>
 #include <stdlib.h>
 #include <string.h>
 #include <ctype.h>
 #include <omp.h>
 
-#include "mp.h"
-
-#define MAX_LINES 5000
+#define MAX_LINE_LENGTH 2000
 
 
+void findMinChars(int id, char* minCharAtLine, int numThreads, int maxLines);
 
-/* comparison function to use to find the lowest character in each row */
-char findMinChars(char* line)
+void findMinChars(int myID, char* minCharAtLine, int numThreads, int maxLines)
 {
-    char compChar;
+    printf("Thread id: %d\n", myID);
+    char* fileName = "/homes/dan/625/wiki_dump.txt";
+    int currentLineNum = 1, iteration = 0;
 
-    if(isalpha(line[0]) == 0)
-        compChar = 'z';
-    else
-        compChar = line[0];
+    char* line;
+    size_t numRead;
+    char minChar; 
 
-    //printf("compChar: %c\n", compChar);
-    for(int i = 0; i < strlen(line); i++)
+    FILE* fp = fopen(fileName, "r");
+    if(!fp)
+        return;
+    size_t maxLineLength = (size_t)MAX_LINE_LENGTH;
+    
+    int i;
+    #pragma omp private(fp, myID, line, currentLineNum, i, iteration, minChar, numRead, maxLineLength)
     {
-        if(isalpha(line[i]) != 0)
-        {
-            //printf("line[i]: %c | compChar: %c\n", line[i], compChar);
-            if(line[i] < compChar)
+        line = malloc(sizeof(char) * MAX_LINE_LENGTH);
+
+        while(currentLineNum < maxLines)
+        {    
+            /* this will get us to where we need to be */
+            for(int i = 0; i < currentLineNum; i++)
+                getline(&line, &maxLineLength, fp);
+            
+            numRead = getline(&line, &maxLineLength, fp);
+        
+            /* setting the min char to compare against with the highest value in our range */
+            minChar = (char)126;
+            for(i = 0; i < numRead; i++)
             {
-                compChar = line[i];
+                if ((line[i] > 32) && (line[i] < 127))
+                {
+                    /* little optimization */
+                    if(line[i] == 33)
+                    {
+                        minChar = 33;
+                        break;
+                    }
+                    if(line[i] < minChar)
+                        minChar = line[i];
+                }
             }
-        }
-    }
-    return compChar;
+            
+            #pragma omp critical
+            {
+                currentLineNum = myID + (numThreads * iteration);
+                /* should continually update for each iteration */
+                iteration++;
+                //printf("%d: %c\n", currentLineNum, minChar);
+                minCharAtLine[currentLineNum] = minChar;
+            }
+
+            //fseek(fp, NUM_THREADS, SEEK_SET);
+
+        } // end while loop
+
+        free(line);
+    } // end of #pragma
+    
 }
 
-int main()
+int main(int argc, char** argv)
 {
-
-    size_t lineLen = 2500;
-    /* don't allow more than 2500 chars in one string */
-    char* line = malloc(sizeof(char) *lineLen);
-    int lineNum = 0;
-
-    FILE* fp;
-    fp = fopen("/homes/dan/625/wiki_dump.txt", "r");
-    if(!fp)
-        return -1;
-    
-    for(int i = 0; i < MAX_LINES; i++)
+    int numThreads = 2, maxLines = 1000;
+    /*switch(argc)
     {
-        /* change this to getline() */
-        if(getline(&line, &lineLen, fp) == -1)
+        case 2:
+            numThreads = atoi(argv[1]);
+            maxLines = 1000;
             break;
-        
-        //if (fscanf(fp, "%[^\n]\n", line) == EOF)
-        //    break;
-        printf("Line %d: min char: %c\n", lineNum, findMinChars(line));
-        lineNum++;
-    }
+        case 3:
+            numThreads = atoi(argv[1]);
+            maxLines = atoi(argv[2]);
+            break;
+        default:
+            fprintf(stderr, "%s\n", "Usage: ./mp numThreads maxLines");
+            exit(-1);
+    }*/
+    
 
+    omp_set_num_threads(numThreads);
+
+    char* minCharAtLine = malloc(sizeof(char) * maxLines);
+    //memset(minCharAtLine, 0, strlen(minCharAtLine));
+
+    /* start timer here */
+    #pragma omp parallel
+    {
+        findMinChars(omp_get_thread_num(), minCharAtLine, numThreads, maxLines);
+    }
+    /* stop timer here */
+
+    for(int i = 1; i < maxLines; i++)
+    {
+        printf("Line %d: %c\n", i, minCharAtLine[i]);
+    }
 
     return 0;
 }
