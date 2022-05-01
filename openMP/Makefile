@@ -1,8 +1,8 @@
 CC=gcc 
-CFLAGS=-Wall -Werror -std=c99
+CFLAGS=-std=c99
 
 mp: 
-	${CC} -fopenmp mp.c mp.h -o mp ${CFLAGS}
+	${CC} -g -fopenmp mp.c -o mp ${CFLAGS}
 
 clean: 
 	rm -f mp 
