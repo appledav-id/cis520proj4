@@ -2,7 +2,7 @@ CC=mpicc
 CFLAGS=-Wall -Werror 
 
 mpi.o: mpi.c 
-	${CC} -c mpi.c -o mpi.o  ${CFLAGS}
+	${CC} -g mpi.c -o mpi  ${CFLAGS}
 
 clean: 
 	rm -f mpi 
