@@ -1,8 +1,8 @@
 CC=gcc 
-CFLAGS=-std=c99
+CFLAGS=-std=c99 -Wall
 
 mp: 
-	${CC} -g -fopenmp mp.c -o mp ${CFLAGS}
+	${CC} -fopenmp mp.c -o mp ${CFLAGS} -g
 
 clean: 
 	rm -f mp 
