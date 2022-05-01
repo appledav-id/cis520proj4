@@ -8,93 +8,53 @@
 #include <time.h>
 
 #define MAX_LINE_LENGTH 2000
+#define MAX_LINES 1000000
 
+char gFileContents[MAX_LINES][MAX_LINE_LENGTH];
 
 void findMinChars(char* minCharAtLine, int numThreads, int maxLines);
 
 void findMinChars(char* minCharAtLine, int numThreads, int maxLines)
 {
-    char* fileName = "/homes/dan/625/wiki_dump.txt";
-    int currentLineNum = 0, iteration = 0;
+    int lineNum = 0;
+    char minChar;
 
-    char* line;
-    int numRead;
-    char minChar; 
-
-    size_t maxLineLength = (size_t)MAX_LINE_LENGTH;
-    
-    int i;
-    #pragma omp parallel private( line, currentLineNum, i, iteration, minChar, numRead, maxLineLength) num_threads(numThreads)
+    #pragma omp parallel private(lineNum, minChar) num_threads(numThreads)
     {
-        FILE* fp = fopen(fileName, "r");
+        lineNum = omp_get_thread_num();
 
-        int myID = omp_get_thread_num();
-        printf("Myid: %d\n", myID);
-        currentLineNum = myID;
-        line = malloc(sizeof(char) * MAX_LINE_LENGTH);
-
-        while(currentLineNum < maxLines)
-        {    
-            /* this will get us to where we need to be */
-            for(int i = 0; i < numThreads - 1; i++)
+        while(lineNum < maxLines)
+        {
+            minChar = 127;
+            for(int i = 0; i < MAX_LINE_LENGTH; i++)
             {
-                numRead = getline(&line, &maxLineLength, fp);
-                if(numRead == -1)
-                    break;
-            }
-            
-            numRead = getline(&line, &maxLineLength, fp);
-            if(numRead == -1)
-            {
-                minChar = 126;
-                continue;
-            }
-        
-            /* setting the min char to compare against with the highest value in our range */
-            minChar = (char)126;
-            for(i = 0; i < numRead; i++)
-            {
-                if ((line[i] > 32) && (line[i] < 127))
+                if ((gFileContents[lineNum][i] > 32) && (gFileContents[lineNum][i] < 127)) // Everything Only between Space and Delete
                 {
-                    //printf("ID %d line[i]: %c\n", myID, line[i]);
-                    /* little optimization */
-                    if(line[i] == 33)
+                    if (gFileContents[lineNum][i] < minChar)
                     {
-                        minChar = 33;
-                        //printf("ID %d: %d | Found ! - Min char changed: %c\n", myID, currentLineNum + (numThreads * iteration),  minChar);
-                        break;
-                    }
-                    if(line[i] < minChar)
-                    {
-                        minChar = line[i];
-                        //printf("ID %d: %d | Min char changed: %c\n", myID, currentLineNum + (numThreads * iteration), minChar);
+                        //printf("%d: %d: Minchar changed: %c | %d => %c | %d\n", omp_get_thread_num(), lineNum, minChar, minChar, gFileContents[lineNum][i], gFileContents[lineNum][i]);
+                        minChar = gFileContents[lineNum][i];
                     }
                 }
-                //printf("ID %d: %d | Min char right now: %c | %d\n", myID, currentLineNum + (numThreads * iteration), minChar, (int)minChar);
             }
-            
+
+            /* update so other threads can go ahead */
+            lineNum += numThreads;
+
             #pragma omp critical
             {
-                currentLineNum = myID + (numThreads * iteration);
-                /* should continually update for each iteration */
-                iteration++;
-                printf("ID %d: %d | %c\n", myID, currentLineNum, minChar);
-                minCharAtLine[currentLineNum] = minChar;
+                minCharAtLine[lineNum - numThreads] = minChar;
             }
-
-
-        } // end while loop
-
-        fclose(fp);
-        free(line);
-    } // end of #pragma
-
+        }
+        printf("Hello from thread %d\n", omp_get_thread_num());
+    }
 }
+
 
 int main(int argc, char** argv)
 {
     clock_t start, end, length;
-    int numThreads = 2, maxLines = 1000;
+    int numThreads = 4, maxLines = MAX_LINES;
     switch(argc)
     {
         case 2:
@@ -108,24 +68,43 @@ int main(int argc, char** argv)
     }
     
 
-    omp_set_num_threads(numThreads);
+    //omp_set_num_threads(numThreads);
 
     char* minCharAtLine = malloc(sizeof(char) * maxLines);
-    //memset(minCharAtLine, 0, strlen(minCharAtLine));
+    char* lineRead = malloc(sizeof(char) * MAX_LINE_LENGTH);
+    
+    int numRead;
+    
+    /* need this for getline */
+    size_t maxLineLength = MAX_LINE_LENGTH;
+
+    FILE* fp = fopen("/homes/dan/625/wiki_dump.txt", "r");
+    if(!fp)
+        return -1;
+    
+    for(int i = 0; i < maxLines; i++)
+    {
+        numRead = getline(&lineRead, &maxLineLength, fp);
+        if(numRead == -1)
+            break;
+        /* i know this is gross but its all I could do */
+        strncpy(gFileContents[i], lineRead, MAX_LINE_LENGTH); 
+    }
+
 
     /* start timer here */
     start = clock();
     findMinChars(minCharAtLine, numThreads, maxLines);
     end = clock();
 
-    length = (double)(end - start) / CLOCKS_PER_SEC ;
+    length = (double)(end - start);
 
     for(int i = 0; i < maxLines; i++)
     {
         printf("Line %d: %c\n", i, minCharAtLine[i]);
     }
 
-    printf("Time taken: %5f\n", length);
+    printf("Time taken: %f\n", length);
 
     return 0;
 }
