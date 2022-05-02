@@ -9,10 +9,10 @@
 ## be #!/bin/bash (or another valid shell).
 
 ## Specify the amount of RAM needed _per_core_. Default is 1G
-#SBATCH --mem-per-cpu=1G
+#SBATCH --mem-per-cpu=2G
 
 ## Specify the maximum runtime. Default is 1 hour (1:00:00)
-#SBATCH --time=0:10:00   # Use the form DD-HH:MM:SS
+#SBATCH --time=0:20:00   # Use the form DD-HH:MM:SS
 #SBATCH --partition=killable.q   # Job may run as killable on owned nodes
 
 ## Tell slurm how many cores to use, and how many nodes to use
@@ -21,7 +21,7 @@
 ## benefit from emailing us at beocat@cis.ksu.edu to see how we can assist in
 ## getting your job scheduled in a reasonable amount of time.
 #SBATCH --nodes=1
-#SBATCH --ntasks-per-node=8
+#SBATCH --ntasks-per-node=20
 
 ## Name my job, to make it easier to find in the queue
 #SBATCH --job-name=lh_mpi
@@ -32,4 +32,9 @@
 ## Email address to send the email to based on the above line.
 #SBATCH --mail-user=lukehetrick@ksu.edu
 
-./mpi
+mpirun -np 1 ./mpi 
+mpirun -np 2 ./mpi 
+mpirun -np 4 ./mpi 
+mpirun -np 8 ./mpi 
+mpirun -np 16 ./mpi 
+mpirun -np 20 ./mpi 

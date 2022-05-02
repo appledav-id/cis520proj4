@@ -1,15 +1,10 @@
-/* kstat --me for the beocat queue
-   sbatch sbatch_script.sh
-
-ntasks -> threads, nodes -> basically a cpu
- */
-
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
+#include <time.h>
 #include <mpi.h>
 
-#define MAX_LINES 100   
+#define MAX_LINES 1000000  
 int NUM_THREADS;
 size_t lineLen = 2500;
 
@@ -43,6 +38,9 @@ int handleMinChar(int offset, int chunk, int myID)
 
     /* don't allow more than 2500 chars in one string */
     char* line = (char*)malloc(sizeof(char) *lineLen);
+    if (line == NULL)
+        return 0;
+
     int length;
     FILE* fp;
     fp = fopen("/homes/dan/625/wiki_dump.txt", "r");
@@ -65,7 +63,7 @@ int handleMinChar(int offset, int chunk, int myID)
             break;
         minChars[i] = findMinChars(line, length);
     }
-    
+
     free(line);
     fclose(fp);
     return 1;
@@ -75,9 +73,9 @@ int handleMinChar(int offset, int chunk, int myID)
 // general structure of this code was inspired by: https://hpc-tutorials.llnl.gov/mpi/examples/mpi_array.c
 int main(int argc, char* argv[])
 {
-
+    clock_t begin = clock();
     int rc, rank, numtasks;
-    int ROOT = 0;   //this is the root rank
+    int MASTER = 0;   // the MASTER rank
     int chunksize, offset, leftover, tag1, tag2, destThread, srcThread;
     MPI_Status status;
 
@@ -90,18 +88,19 @@ int main(int argc, char* argv[])
     MPI_Comm_size(MPI_COMM_WORLD,&numtasks);
     MPI_Comm_rank(MPI_COMM_WORLD,&rank);
     
-    //update varialbes now that threads are initialized
+    //initialize variables now that MPI is initialzed
     NUM_THREADS = numtasks;
+
     chunksize = MAX_LINES / NUM_THREADS;
     leftover = MAX_LINES % NUM_THREADS;
     tag1 = 2;
     tag2 = 1;
 
 
-    /*************************** Root thread tasks *********************************************/
-    if(rank == ROOT)
+    /*************************** MASTER thread tasks *********************************************/
+    if(rank == MASTER)
     {
-        //Root thread handles its own chunk and the leftovers
+        //MASTER thread handles its own chunk and the leftovers
         offset = chunksize + leftover;
         for (destThread = 1; destThread < NUM_THREADS; destThread++)
         {   
@@ -126,20 +125,26 @@ int main(int argc, char* argv[])
             MPI_Recv(&minChars[offset], chunksize, MPI_BYTE, srcThread, tag2, MPI_COMM_WORLD, &status);
         }
 
-        //MPI_Reduce??????????dakj:JAFOAHAJC:NIULAHD;ajflusdv;lowAFLuibaw;oifsdluidvluboi;wa;odocs
-
         //print results at the end
         for(int i = 0; i < MAX_LINES; i ++)
         {
-            printf("Line %d: min char: %c \tcharNum: %d\n", i, minChars[i], minChars[i]);
+
+            // printf("Line %d: min char: %c \tcharNum: %d\n", i, minChars[i], minChars[i]); debugging print
+            printf("%d: %d\n", i+1, minChars[i]);
         }
+
+        clock_t end = clock();
+        double run_time = (double)(end - begin);
+        run_time++;
+        printf("Num threads: %d, NumLines: %d, time: %lf\n", NUM_THREADS, MAX_LINES, run_time / CLOCKS_PER_SEC);
+
     }
 
-    /*************************** Non-Root thread tasks *********************************************/
-    if(rank > ROOT)
+    /*************************** Non-MASTER thread tasks *********************************************/
+    if(rank > MASTER)
     {
         //recieve this thread's portion of the work
-        srcThread = ROOT;
+        srcThread = MASTER;
         MPI_Recv(&offset, 1, MPI_INT, srcThread, tag1, MPI_COMM_WORLD, &status);
         MPI_Recv(&minChars[offset], chunksize, MPI_BYTE, srcThread, tag2, MPI_COMM_WORLD, &status);
 
@@ -149,8 +154,8 @@ int main(int argc, char* argv[])
             printf("rank %d failed\n", rank);
         }
 
-        //send the results back to master
-        destThread = ROOT;
+        //send the results back to MASTER
+        destThread = MASTER;
         MPI_Send(&offset, 1, MPI_INT, destThread, tag1, MPI_COMM_WORLD);
         MPI_Send(&minChars[offset], chunksize, MPI_BYTE, destThread, tag2, MPI_COMM_WORLD);
     }
