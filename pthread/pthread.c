@@ -34,6 +34,7 @@ int findMinChars(char *line, int len)
     return (int)compChar;
 }
 
+// This is the function used for threads
 void *thread_func(void *id)
 {
     int line_num = 0;
@@ -76,27 +77,26 @@ void *thread_func(void *id)
                 break; // this will only get us out of the inner loop
         }
         if (ret == -1 || line_num > *Max_Lines)
-            break;
+            break; // breaks out of outside loop
         c = findMinChars(line, ret);
         min_char[(line_num - 1)] = c;
     }
 
-    free(line);
-    free(id);
+    free(line); 
+    free(id); //free the malloc from main args
     fclose(fp);
     pthread_exit(0);
 }
 
 int main(int argc, char **argv)
 {
-
-    if (argc < 3)
+    if (argc < 3) //check the input arguments
     {
         printf("%s ThreadCount MaxLineNumber\n", argv[0]);
         return EXIT_FAILURE;
     }
 
-    Num_Threads = malloc(sizeof(int));
+    Num_Threads = malloc(sizeof(int)); 
     if (Num_Threads == NULL)
     {
         printf("allocation Failure\n");
@@ -121,14 +121,14 @@ int main(int argc, char **argv)
         return -1;
     }
 
-    pthread_t *threads = malloc(sizeof(pthread_t) * (*Num_Threads));
+    pthread_t *threads = malloc(sizeof(pthread_t) * (*Num_Threads)); //array to hold thread info
     if (threads == NULL)
     {
         printf("allocation Failure\n");
         return -1;
     }
 
-    clock_t begin = clock();
+    clock_t begin = clock(); //Start to time the program
 
     int i;
     int ret;
@@ -136,7 +136,8 @@ int main(int argc, char **argv)
 
     for (i = 0; i < *Num_Threads; i++)
     {
-        int *arg = malloc(sizeof(*arg));
+        //needed to allocate this so that can pass in correct id to thread function
+        int *arg = malloc(sizeof(*arg)); 
         if (arg == NULL)
         {
             printf("allocation Failure\n");
@@ -144,7 +145,7 @@ int main(int argc, char **argv)
         }
         *arg = i;
 
-        ret = pthread_create(&threads[i], NULL, thread_func, (void *)arg);
+        ret = pthread_create(&threads[i], NULL, thread_func, (void *)arg); //create the thread for funtion passing in arg
         if (ret != 0)
         {
             printf("pthread create error:\n");
@@ -154,7 +155,7 @@ int main(int argc, char **argv)
 
     for (i = 0; i < *Num_Threads; i++)
     {
-        ret = pthread_join(threads[i], &status);
+        ret = pthread_join(threads[i], &status); //check to see that threads have closed
         if (ret != 0)
         {
             printf("pthread join error: %d\n", ret);
@@ -164,15 +165,16 @@ int main(int argc, char **argv)
 
     for (i = 0; i < *Max_Lines; i++)
     {
-        int val = min_char[i];
-        printf("%d: %d\n", i + 1, val);
+        int val = min_char[i]; 
+        printf("%d: %d\n", i + 1, val); //print the values for minimum character of each line to the terminal
     }
 
-    clock_t end = clock();
-    double run_time = (double)(end - begin);
+    clock_t end = clock(); //stop the execution timer
+    double run_time = (double)(end - begin); //Calulate the elapsed Time
 
-    printf("\n\n\n{ \"NumThreads\":%d, \"NumLines\":%d, \"RunTime\":%lf }\n", *Num_Threads, *Max_Lines, run_time / CLOCKS_PER_SEC);
+    printf("\n\n\n{ \"NumThreads\":%d, \"NumLines\":%d, \"RunTime\":%lf }\n", *Num_Threads, *Max_Lines, run_time / CLOCKS_PER_SEC); //Print out values to terminal in JSON Format
 
+    //Free the rest of the memory
     free(min_char);
     free(Max_Lines);
     free(Num_Threads);
