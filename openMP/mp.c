@@ -5,16 +5,13 @@
 #include <string.h>
 #include <ctype.h>
 #include <omp.h>
-#include <time.h>
 
 #define MAX_LINE_LENGTH 2000
 #define MAX_LINES 1000000
 
 char gFileContents[MAX_LINES][MAX_LINE_LENGTH];
 
-void findMinChars(char* minCharAtLine, int numThreads, int maxLines);
-
-void findMinChars(char* minCharAtLine, int numThreads, int maxLines)
+static void findMinChars(char* minCharAtLine, int numThreads, int maxLines)
 {
     int lineNum = 0;
     char minChar;
@@ -25,14 +22,15 @@ void findMinChars(char* minCharAtLine, int numThreads, int maxLines)
 
         while(lineNum < maxLines)
         {
+            /* set to max value each new line */
             minChar = 127;
             for(int i = 0; i < MAX_LINE_LENGTH; i++)
             {
+                /* only look in valid range */
                 if ((gFileContents[lineNum][i] > 32) && (gFileContents[lineNum][i] < 127)) // Everything Only between Space and Delete
                 {
                     if (gFileContents[lineNum][i] < minChar)
                     {
-                        //printf("%d: %d: Minchar changed: %c | %d => %c | %d\n", omp_get_thread_num(), lineNum, minChar, minChar, gFileContents[lineNum][i], gFileContents[lineNum][i]);
                         minChar = gFileContents[lineNum][i];
                     }
                 }
@@ -41,34 +39,22 @@ void findMinChars(char* minCharAtLine, int numThreads, int maxLines)
             /* update so other threads can go ahead */
             lineNum += numThreads;
 
+            /* wait for each thread to write to file */
             #pragma omp critical
             {
                 minCharAtLine[lineNum - numThreads] = minChar;
             }
         }
-        printf("Hello from thread %d\n", omp_get_thread_num());
     }
 }
 
 
 int main(int argc, char** argv)
 {
-    clock_t start, end, length;
-    int numThreads = 4, maxLines = MAX_LINES;
-    switch(argc)
-    {
-        case 2:
-            numThreads = atoi(argv[1]);
-            maxLines = 1000;
-            break;
-        case 3:
-            numThreads = atoi(argv[1]);
-            maxLines = atoi(argv[2]);
-            break;
-    }
+    /* adjust numThreads as needed. Originally, this was supposed to be
+         determined via command line args, but this is easier for consistency */
+    int numThreads = 20, maxLines = MAX_LINES;
     
-
-    //omp_set_num_threads(numThreads);
 
     char* minCharAtLine = malloc(sizeof(char) * maxLines);
     char* lineRead = malloc(sizeof(char) * MAX_LINE_LENGTH);
@@ -91,20 +77,16 @@ int main(int argc, char** argv)
         strncpy(gFileContents[i], lineRead, MAX_LINE_LENGTH); 
     }
 
-
-    /* start timer here */
-    start = clock();
+    
+    /* do the threading and calculation stuff */
     findMinChars(minCharAtLine, numThreads, maxLines);
-    end = clock();
-
-    length = (double)(end - start);
 
     for(int i = 0; i < maxLines; i++)
     {
-        printf("Line %d: %c\n", i, minCharAtLine[i]);
+        /* if you want to see output, uncomment this out */
+        printf("Line %d: %c\tcharNum: %d", i, minCharAtLine[i], minCharAtLine[i]);
     }
 
-    printf("Time taken: %f\n", length);
 
     return 0;
 }
