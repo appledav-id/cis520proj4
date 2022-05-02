@@ -1,5 +1,5 @@
 #!/bin/bash -l
-## Taken From A Sample slurm script created by Kyle Hutson
+## A Sample slurm script created by Kyle Hutson
 ##
 ## Note: Usually a '#" at the beginning of the line is ignored. However, in
 ## the case of slurm, lines beginning with #SBATCH are commands for slurm itself, so
@@ -9,12 +9,11 @@
 ## be #!/bin/bash (or another valid shell).
 
 ## Specify the amount of RAM needed _per_core_. Default is 1G
-#SBATCH --mem-per-cpu=2G
+#SBATCH --mem-per-cpu=1G
 
 ## Specify the maximum runtime. Default is 1 hour (1:00:00)
 #SBATCH --time=0:10:00   # Use the form DD-HH:MM:SS
 #SBATCH --partition=killable.q   # Job may run as killable on owned nodes
-#SBATCH --constraint=warlocks
 
 ## Tell slurm how many cores to use, and how many nodes to use
 ## Jobs requesting 16 or fewer cores tend to get scheduled
@@ -22,14 +21,15 @@
 ## benefit from emailing us at beocat@cis.ksu.edu to see how we can assist in
 ## getting your job scheduled in a reasonable amount of time.
 #SBATCH --nodes=1
+#SBATCH --ntasks-per-node=8
 
 ## Name my job, to make it easier to find in the queue
-#SBATCH --job-name=mls_pthread
+#SBATCH --job-name=lh_mpi
 
 ## Send email when a job begins, fails, or ends
 #SBATCH --mail-type=ALL   # same as =BEGIN,FAIL,END
 
 ## Email address to send the email to based on the above line.
-#SBATCH --mail-user=msinclair@ksu.edu
+#SBATCH --mail-user=lukehetrick@ksu.edu
 
-time ./pthread $1 1000000
+./mpi
