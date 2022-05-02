@@ -84,7 +84,7 @@ int main(int argc, char** argv)
     for(int i = 0; i < maxLines; i++)
     {
         /* if you want to see output, uncomment this out */
-        printf("Line %d: %c\tcharNum: %d", i, minCharAtLine[i], minCharAtLine[i]);
+        printf("Line %d: min char: %c\tcharNum: %d\n", i, minCharAtLine[i], minCharAtLine[i]);
     }
 
 
